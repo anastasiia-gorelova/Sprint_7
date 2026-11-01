@@ -11,16 +11,28 @@ class TestLoginCourier:
     @allure.title('Курьер авторизуется и получает свой id')
     def test_login_returns_courier_id(self, login_data):
         response = requests.post(LOGIN_URL, json=login_data, timeout=TIMEOUT)
+        body = response.json()
+        courier_id = body.get('id')
+
         assert response.status_code == 200, response.text
-        courier_id = response.json()['id']
+        assert 'id' in body, body
         assert type(courier_id) is int
         assert courier_id > 0
 
+    @allure.title('Повторный вход возвращает тот же id курьера')
+    def test_repeated_login_returns_same_id(self, login_data):
+        first_response = requests.post(LOGIN_URL, json=login_data, timeout=TIMEOUT)
         repeated_response = requests.post(
             LOGIN_URL, json=login_data, timeout=TIMEOUT
         )
+        first_body = first_response.json()
+        repeated_body = repeated_response.json()
+
+        assert first_response.status_code == 200, first_response.text
         assert repeated_response.status_code == 200, repeated_response.text
-        assert repeated_response.json()['id'] == courier_id
+        assert 'id' in first_body, first_body
+        assert 'id' in repeated_body, repeated_body
+        assert first_body['id'] == repeated_body['id']
 
     @allure.title('Вход без обязательного поля {field}')
     @pytest.mark.parametrize('field', ['login', 'password'])

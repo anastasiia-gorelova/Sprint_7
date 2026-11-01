@@ -7,20 +7,25 @@ from urls import ORDERS_URL, TIMEOUT
 
 @allure.feature('Создание заказа')
 class TestCreateOrder:
-    @allure.title('Заказ с вариантом цвета: {color}')
+    @allure.title('Заказ с вариантом цвета: {color_data}')
     @pytest.mark.parametrize(
-        'color',
-        [['BLACK'], ['GREY'], ['BLACK', 'GREY'], [], None],
+        'color_data',
+        [
+            {'color': ['BLACK']},
+            {'color': ['GREY']},
+            {'color': ['BLACK', 'GREY']},
+            {'color': []},
+            {},
+        ],
         ids=['black', 'grey', 'both', 'empty-list', 'color-omitted'],
     )
-    def test_create_order_returns_track(self, new_order, order_tracks, color):
-        # None означает, что ключ color вообще не передаётся в запросе.
-        if color is not None:
-            new_order['color'] = color
+    def test_create_order_returns_track(self, new_order, order_tracks, color_data):
+        # Пустой словарь оставляет запрос без поля color.
+        new_order.update(color_data)
         response = requests.post(ORDERS_URL, json=new_order, timeout=TIMEOUT)
         body = response.json()
-        if 'track' in body:
-            order_tracks.append(body['track'])
+        # get вернёт None, если track отсутствует; очистка пропустит это значение.
+        order_tracks.append(body.get('track'))
 
         assert response.status_code == 201, response.text
         assert 'track' in body, body
